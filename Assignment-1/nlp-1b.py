@@ -7,8 +7,8 @@ from collections import Counter
 from prettytable import PrettyTable
 
 def download_treebank():
-    if not nltk.data.find('corpora/treebank/combined'):
-        nltk.download('treebank')
+    if not nltk.data.find("corpora/treebank/combined"):
+        nltk.download("treebank")
 
 def split_corpus():
     corpus = treebank.fileids()
@@ -16,35 +16,23 @@ def split_corpus():
     test_corpus = corpus[170:] # 29 news files in test_corpus
     return train_corpus, test_corpus           
 
-def preprocess(corpus, vocab, start, end, label, lowercase):
-    bigrams = []
+def preprocess(corpus, vocab, start, end, label, lowercase, n):
+    ngrams_list = []
     sents = [[start] + [w.lower() for w in sent] + [end] if lowercase else [start] + sent + [end] for sent in treebank.sents(corpus)]
     for sent in sents:
-        padded_sent = ngrams(tuple(sent), 2, pad_left=True, pad_right=True, left_pad_symbol=start, right_pad_symbol=end) # pads the sentence with start and end symbols, and creates bigrams
-        sent_bigrams = [(w1,w2) for (w1,w2) in padded_sent if (w1,w2) != (start, start) and (w1,w2) != (end,end)] # excludes bigrams where both words are the start or end symbols, and stores the remaining bigrams in a list
-        bigrams.extend(sent_bigrams)
-    bigrams = replace_tokens(bigrams, vocab, 3, label)
-    return bigrams
+        padded_sent = ngrams(tuple(sent), n, pad_left=True, pad_right=True, left_pad_symbol=start, right_pad_symbol=end) # pads the sentence with start and end symbols, and creates ngrams of order n
+        sent_ngrams = [ngram for ngram in padded_sent if ngram.count(start) < 2 and ngram.count(end) < 2]
+        ngrams_list.extend(sent_ngrams)
+    ngrams_list = replace_tokens(ngrams_list, vocab, 3, label)
+    return ngrams_list
 
-def replace_tokens(bigrams, vocab, min_freq, label):
-    word_counts = Counter([word for bigram in bigrams for word in bigram])
-    if not vocab: return [tuple(label if word_counts[word] < min_freq else word for word in bigram) for bigram in bigrams]
-    else: return [tuple(label if word not in vocab else word for word in bigram) for bigram in bigrams]
+def replace_tokens(ngrams, vocab, min_freq, label):
+    word_counts = Counter([word for ngram in ngrams for word in ngram])
+    if not vocab: return [tuple(label if word_counts[word] < min_freq else word for word in ngram) for ngram in ngrams]
+    else: return [tuple(label if word not in vocab else word for word in ngram) for ngram in ngrams]
 
-def create_vocab(train_bigrams):
-    return {word for bigram in train_bigrams for word in bigram if word != '<UNK>'}
-
-def train(k, vocab, bigrams):
-    bigram_model = {}
-    bigram_counts = Counter(bigrams) # counts the occurrences of each bigram (descending order counter object)
-    words = sorted(set([word for bigram in bigrams for word in bigram])) # all unique words in the train_corpus
-    for curr_word in words:
-        total_count = sum([count for (first, second), count in bigram_counts.items() if first == curr_word])
-        for next_word in words:
-            count = bigram_counts[(curr_word, next_word)]
-            bigram_model[(curr_word, next_word)] = (count + k) / (total_count + k*len(vocab))
-    #biprint(bigram_model, words[:5])
-    return bigram_model
+def create_vocab(train_ngrams, label):
+    return {word for ngram in train_ngrams for word in ngram if word != label}
 
 def train(k, vocab, ngrams, n):
     ngram_model = {}
@@ -57,37 +45,48 @@ def train(k, vocab, ngrams, n):
             ngram_model[curr_words + (next_word,)] = (count + k) / (total_count + k*len(vocab))
     return ngram_model
 
-def evaluate(bigram_model, bigrams):
-    total_log_prob = sum(math.log(bigram_model[bigram]) for bigram in bigrams)
-    # total prob για 1 bigram (row) = 1??
-    perplexity = math.exp(-(total_log_prob/len(bigrams)))
+def evaluate(ngram_model, ngrams):
+    total_log_prob = sum(math.log(ngram_model[ngram]) for ngram in ngrams)
+    perplexity = math.exp(-(total_log_prob/len(ngrams)))
     return perplexity
 
 def biprint(bigram_table, words):
-    pt = PrettyTable([''] + [f'\033[1m\033[4m{w}\033[0m' for w in words])
-    pt.add_rows([[f'\033[1m\033[4m{curr_word}\033[0m'] + [f'{bigram_table[(curr_word, next_word)]:.6f}' for next_word in words] for curr_word in words])
+    pt = PrettyTable([""] + [f"\033[1m\033[4m{w}\033[0m" for w in words])
+    pt.add_rows([[f"\033[1m\033[4m{curr_word}\033[0m"] + [f"{bigram_table[(curr_word, next_word)]:.6f}" for next_word in words] for curr_word in words])
     print(pt)
-            
+
+def pretty_print(bpa0, bpa1, bpb0, bpb1, tpa0, tpa1, tpb0, tpb1):
+    pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["Model", "k", "Lowercase", "Perplexity"]])
+    pt.add_rows([["Bigram", 1, "False", bpa0], ["Bigram", 1, "True", bpa1], ["Bigram", 0.01, "False", bpb0], ["Bigram", 0.01, "True", bpb1],
+                 ["Trigram", 1, "False", tpa0], ["Trigram", 1, "True", tpa1], ["Trigram", 0.01, "False", tpb0], ["Trigram", 0.01, "True", tpb1]])
+    print(pt)
+    
 def main():
     a, b = 1, 0.01
     download_treebank()
     train_corpus, test_corpus = split_corpus()
 
-    train_bigrams_0, train_bigrams_1 = preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", False), preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", True)
-    vocab_0, vocab_1 = create_vocab(train_bigrams_0), create_vocab(train_bigrams_1)
-    test_bigrams_0, test_bigrams_1 = preprocess(test_corpus, vocab_0, "<BOS>", "<EOS>", "<UNK>", False), preprocess(test_corpus, vocab_1, "<BOS>", "<EOS>", "<UNK>", True)
+    train_bigrams_0, train_bigrams_1, train_trigrams_0, train_trigrams_1 = preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", False, 2), preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", True, 2), preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", False, 3), preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", True, 3)
+    vocab_0, vocab_1 = create_vocab(train_bigrams_0, "<UNK>"), create_vocab(train_bigrams_1, "<UNK>")
+    test_bigrams_0, test_bigrams_1, test_trigrams_0, test_trigrams_1 = preprocess(test_corpus, vocab_0, "<BOS>", "<EOS>", "<UNK>", False, 2), preprocess(test_corpus, vocab_1, "<BOS>", "<EOS>", "<UNK>", True, 2), preprocess(test_corpus, vocab_0, "<BOS>", "<EOS>", "<UNK>", False, 3), preprocess(test_corpus, vocab_1, "<BOS>", "<EOS>", "<UNK>", True, 3)
 
-    # Bigram Models with k = 1 Smoothing, where 0: lowercase = False and 1: lowercase = True
-    bigram_model_a0, bigram_model_a1 = train(a, vocab_0, train_bigrams_0), train(a, vocab_1, train_bigrams_1)
+    # Bigram Model with k = 1 Smoothing, where 0: lowercase = False and 1: lowercase = True
+    bigram_model_a0, bigram_model_a1 = train(a, vocab_0, train_bigrams_0, 2), train(a, vocab_1, train_bigrams_1, 2)
     bi_perp_a0, bi_perp_a1 = evaluate(bigram_model_a0, test_bigrams_0), evaluate(bigram_model_a1, test_bigrams_1)
-    print("normal: ", bi_perp_a0)
-    print("lowercase: ", bi_perp_a1)
 
-    # Bigram Models with k = 0.01 Smoothing, where 0: lowercase = False and 1: lowercase = True
-    bigram_model_b0, bigram_model_b1 = train(b, vocab_0, train_bigrams_0), train(b, vocab_1, train_bigrams_1)
+    # Bigram Model with k = 0.01 Smoothing, where 0: lowercase = False and 1: lowercase = True
+    bigram_model_b0, bigram_model_b1 = train(b, vocab_0, train_bigrams_0, 2), train(b, vocab_1, train_bigrams_1, 2)
     bi_perp_b0, bi_perp_b1 = evaluate(bigram_model_b0, test_bigrams_0), evaluate(bigram_model_b1, test_bigrams_1)
-    print("normal: ", bi_perp_b0)
-    print("lowercase: ", bi_perp_b1)
-    
+
+    # Trigram Model with k = 1 Smoothing, where 0: lowercase = False and 1: lowercase = True
+    trigram_model_a0, trigram_model_a1 = train(a, vocab_0, train_trigrams_0, 3), train(a, vocab_1, train_trigrams_1, 3)
+    tri_perp_a0, tri_perp_a1 = evaluate(trigram_model_a0, test_trigrams_0), evaluate(trigram_model_a1, test_trigrams_1)
+
+    # Trigram Model with k = 0.01 Smoothing, where 0: lowercase = False and 1: lowercase = True
+    trigram_model_b0, trigram_model_b1 = train(b, vocab_0, train_trigrams_0, 2), train(b, vocab_1, train_trigrams_1, 3)
+    tri_perp_b0, tri_perp_b1 = evaluate(trigram_model_b0, test_trigrams_0), evaluate(trigram_model_b1, test_trigrams_1)
+
+    pretty_print(bi_perp_a0, bi_perp_a1,  bi_perp_b0, bi_perp_b1, tri_perp_a0, tri_perp_a1, tri_perp_b0, tri_perp_b1)
+
 if __name__ == "__main__":
     main()
