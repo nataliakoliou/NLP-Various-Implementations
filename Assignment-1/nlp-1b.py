@@ -69,27 +69,39 @@ def main():
     train_bigrams_0, train_bigrams_1, train_trigrams_0, train_trigrams_1 = preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", False, 2), preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", True, 2), preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", False, 3), preprocess(train_corpus, [], "<BOS>", "<EOS>", "<UNK>", True, 3)
     vocab_0, vocab_1 = create_vocab(train_bigrams_0, "<UNK>"), create_vocab(train_bigrams_1, "<UNK>")
     test_bigrams_0, test_bigrams_1, test_trigrams_0, test_trigrams_1 = preprocess(test_corpus, vocab_0, "<BOS>", "<EOS>", "<UNK>", False, 2), preprocess(test_corpus, vocab_1, "<BOS>", "<EOS>", "<UNK>", True, 2), preprocess(test_corpus, vocab_0, "<BOS>", "<EOS>", "<UNK>", False, 3), preprocess(test_corpus, vocab_1, "<BOS>", "<EOS>", "<UNK>", True, 3)
+    
+    print(vocab_0)
+    # Bigram Model with k = 1 Smoothing, where 0: lowercase = False
+    #bigram_model_a0 = train(a, vocab_0, train_bigrams_0, 2)
+    #bi_perp_a0 = evaluate(bigram_model_a0, test_bigrams_0)
 
-    # Bigram Model with k = 1 Smoothing, where 0: lowercase = False and 1: lowercase = True
-    bigram_model_a0, bigram_model_a1 = train(a, vocab_0, train_bigrams_0, 2), train(a, vocab_1, train_bigrams_1, 2)
-    bi_perp_a0, bi_perp_a1 = evaluate(bigram_model_a0, test_bigrams_0), evaluate(bigram_model_a1, test_bigrams_1)
-    print(bi_perp_a0)
+    # Bigram Model with k = 1 Smoothing, where 0: lowercase = True
+    #bigram_model_a1 = train(a, vocab_1, train_bigrams_1, 2)
+    #bi_perp_a1 = evaluate(bigram_model_a1, test_bigrams_1)
 
-    # Bigram Model with k = 0.01 Smoothing, where 0: lowercase = False and 1: lowercase = True
-    #bigram_model_b0, bigram_model_b1 = train(b, vocab_0, train_bigrams_0, 2), train(b, vocab_1, train_bigrams_1, 2)
-    #bi_perp_b0, bi_perp_b1 = evaluate(bigram_model_b0, test_bigrams_0), evaluate(bigram_model_b1, test_bigrams_1)
+    # Bigram Model with k = 0.01 Smoothing, where 0: lowercase = False
+    #bigram_model_b0 = train(b, vocab_0, train_bigrams_0, 2)
+    #bi_perp_b0 = evaluate(bigram_model_b0, test_bigrams_0)
 
-    # Trigram Model with k = 1 Smoothing, where 0: lowercase = False and 1: lowercase = True
+    # Bigram Model with k = 0.01 Smoothing, where 0: lowercase = True
+    #bigram_model_b1 = train(b, vocab_1, train_bigrams_1, 2)
+    #bi_perp_b1 = evaluate(bigram_model_b1, test_bigrams_1)
+
+    # Trigram Model with k = 1 Smoothing, where 0: lowercase = False
     #trigram_model_a0 = train(a, vocab_0, train_trigrams_0, 3)
     #tri_perp_a0 = evaluate(trigram_model_a0, test_trigrams_0)
-    #print(tri_perp_a0)
 
+    # Trigram Model with k = 1 Smoothing, where 0: lowercase = True
     #trigram_model_a1 = train(a, vocab_1, train_trigrams_1, 3)
     #tri_perp_a1 = evaluate(trigram_model_a1, test_trigrams_1)
 
-    # Trigram Model with k = 0.01 Smoothing, where 0: lowercase = False and 1: lowercase = True
-    #trigram_model_b0, trigram_model_b1 = train(b, vocab_0, train_trigrams_0, 3), train(b, vocab_1, train_trigrams_1, 3)
-    #tri_perp_b0, tri_perp_b1 = evaluate(trigram_model_b0, test_trigrams_0), evaluate(trigram_model_b1, test_trigrams_1)
+    # Trigram Model with k = 0.01 Smoothing, where 0: lowercase = False
+    #trigram_model_b0 = train(b, vocab_0, train_trigrams_0, 3)
+    #tri_perp_b0 = evaluate(trigram_model_b0, test_trigrams_0)
+
+    # Trigram Model with k = 0.01 Smoothing, where 0: lowercase = True
+    #trigram_model_b1 = train(b, vocab_1, train_trigrams_1, 3)
+    #tri_perp_b1 = evaluate(trigram_model_b1, test_trigrams_1)
 
     #pretty_print(bi_perp_a0, bi_perp_a1,  bi_perp_b0, bi_perp_b1, tri_perp_a0, tri_perp_a1, tri_perp_b0, tri_perp_b1)
 
