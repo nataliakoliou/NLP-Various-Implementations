@@ -1,6 +1,6 @@
 import nltk
 import math
-from itertools import product
+import random
 from nltk.corpus import treebank
 from nltk.util import ngrams
 from collections import defaultdict, Counter
@@ -58,6 +58,25 @@ def build_and_apply(n, k, train_ngrams, vocab, test_ngrams, lowercase):
     pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["Model", "k", "Lowercase", "Perplexity"]])
     pt.add_row(["Bigram", k, lowercase, perplexity]) if n == 2 else pt.add_row(["Trigram", k, lowercase, perplexity])
     print(pt)
+    return ngram_model
+
+def generate_sentences(model, n, start, end, vocab, num_sents):
+    for ns in range(num_sents):
+        start_ngrams = [ngram for ngram in model.keys() if ngram[0] == start]
+        random_ngram = random.choice(start_ngrams)
+        sentence = list(random_ngram[:n-1])
+        while sentence[-1] != end:
+            prefix = tuple(sentence[-n+1:])  # get the last n-1 words in sentence as a tuple
+            if prefix not in model:
+                sentence.append(end) if sentence[-1] != end else None
+                break
+            candidates = [(c, p) for c, p in model[prefix].items() if c in vocab or c == end]
+            if not candidates:
+                sentence.append(end) if sentence[-1] != end else None
+                break
+            choices, probabilities = zip(*candidates)
+            sentence.append(random.choices(choices, weights=probabilities)[0])
+        print(f"\033[1mSentence {ns+1}:\033[0m " + " ".join(sentence))
 
 def biprint(bigram_table, words):
     pt = PrettyTable([""] + [f"\033[1m\033[4m{w}\033[0m" for w in words])
@@ -66,7 +85,7 @@ def biprint(bigram_table, words):
 
 ######################################################################################################################################################################
 
-a, b, bi, tri, min_freq = 1, 0.01, 2, 3, 3
+a, b, bi, tri, min_freq, ns = 1, 0.01, 2, 3, 3, 3
 download_treebank()
 train_corpus, test_corpus = split_corpus()
     
@@ -74,25 +93,33 @@ train_corpus_0, train_corpus_1 = edit_corpus(train_corpus); test_corpus_0, test_
 vocab_0, vocab_1 = create_vocab(train_corpus_0, min_freq), create_vocab(train_corpus_1, min_freq)
 
 # Bigram Model with k = 1 Smoothing, where 0: lowercase = False
-build_and_apply(bi, a, preprocess(train_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", bi), vocab_0, preprocess(test_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", bi), False)
+bigram_model_a0 = build_and_apply(bi, a, preprocess(train_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", bi), vocab_0, preprocess(test_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", bi), False)
+generate_sentences(bigram_model_a0, bi, "<BOS>", "<EOS>", vocab_0, ns)
 
 # Bigram Model with k = 1 Smoothing, where 1: lowercase = True
-build_and_apply(bi, a, preprocess(train_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", bi), vocab_1, preprocess(test_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", bi), True)
+bigram_model_a1 = build_and_apply(bi, a, preprocess(train_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", bi), vocab_1, preprocess(test_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", bi), True)
+generate_sentences(bigram_model_a1, bi, "<BOS>", "<EOS>", vocab_1, ns)
 
 # Bigram Model with k = 0.01 Smoothing, where 0: lowercase = False
-build_and_apply(bi, b, preprocess(train_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", bi), vocab_0, preprocess(test_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", bi), False)
+bigram_model_b0 = build_and_apply(bi, b, preprocess(train_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", bi), vocab_0, preprocess(test_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", bi), False)
+generate_sentences(bigram_model_b0, bi, "<BOS>", "<EOS>", vocab_0, ns)
 
 # Bigram Model with k = 0.01 Smoothing, where 1: lowercase = True
-build_and_apply(bi, b, preprocess(train_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", bi), vocab_1, preprocess(test_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", bi), True)
+bigram_model_b1 = build_and_apply(bi, b, preprocess(train_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", bi), vocab_1, preprocess(test_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", bi), True)
+generate_sentences(bigram_model_b1, bi, "<BOS>", "<EOS>", vocab_1, ns)
 
 # Trigram Model with k = 1 Smoothing, where 0: lowercase = False
-build_and_apply(tri, a, preprocess(train_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", tri), vocab_0, preprocess(test_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", tri), False)
+trigram_model_a0 = build_and_apply(tri, a, preprocess(train_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", tri), vocab_0, preprocess(test_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", tri), False)
+generate_sentences(trigram_model_a0, tri, "<BOS>", "<EOS>", vocab_0, ns)
 
 # Trigram Model with k = 1 Smoothing, where 1: lowercase = True
-build_and_apply(tri, a, preprocess(train_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", tri), vocab_1, preprocess(test_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", tri), True)
+trigram_model_a1 = build_and_apply(tri, a, preprocess(train_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", tri), vocab_1, preprocess(test_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", tri), True)
+generate_sentences(trigram_model_a1, tri, "<BOS>", "<EOS>", vocab_1, ns)
 
 # Trigram Model with k = 0.01 Smoothing, where 0: lowercase = False
-build_and_apply(tri, b, preprocess(train_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", tri), vocab_0, preprocess(test_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", tri), False)
+trigram_model_b0 = build_and_apply(tri, b, preprocess(train_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", tri), vocab_0, preprocess(test_corpus_0, vocab_0, "<BOS>", "<EOS>", "<UNK>", tri), False)
+generate_sentences(trigram_model_b0, tri, "<BOS>", "<EOS>", vocab_0, ns)
 
 # Trigram Model with k = 0.01 Smoothing, where 1: lowercase = True
-build_and_apply(tri, b, preprocess(train_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", tri), vocab_1, preprocess(test_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", tri), True)
+trigram_model_b1 = build_and_apply(tri, b, preprocess(train_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", tri), vocab_1, preprocess(test_corpus_1, vocab_1, "<BOS>", "<EOS>", "<UNK>", tri), True)
+generate_sentences(trigram_model_b1, tri, "<BOS>", "<EOS>", vocab_1, ns)
