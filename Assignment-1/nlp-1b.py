@@ -78,11 +78,6 @@ def generate_sentences(model, n, start, end, vocab, num_sents):
             sentence.append(random.choices(choices, weights=probabilities)[0])
         print(f"\033[1mSentence {ns+1}:\033[0m " + " ".join(sentence))
 
-def biprint(bigram_table, words):
-    pt = PrettyTable([""] + [f"\033[1m\033[4m{w}\033[0m" for w in words])
-    pt.add_rows([[f"\033[1m\033[4m{curr_word}\033[0m"] + [f"{bigram_table[(curr_word, next_word)]:.6f}" for next_word in words] for curr_word in words])
-    print(pt)
-
 ######################################################################################################################################################################
 
 a, b, bi, tri, min_freq, ns = 1, 0.01, 2, 3, 3, 3
