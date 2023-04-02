@@ -37,24 +37,25 @@ def create_vocab(train_corpus, min_freq):
     return {word for word, count in Counter(word for sent in train_corpus for word in sent).items() if count >= min_freq}
 
 def train(k, vocab, ngrams):
-    ngram_model = defaultdict(Counter)
-    ngram_counts = Counter(ngrams)
-    prefix_counts = defaultdict(int)
+    ngram_model, ngram_counts = defaultdict(Counter), Counter(ngrams)
+    prefix_counts, prefix_probs = defaultdict(int), defaultdict(float)
     for ngram, count in ngram_counts.items():
         prefix_counts[ngram[:-1]] += count
+    for prefix, count in prefix_counts.items():
+        prefix_probs[prefix] = k / (count + k * len(vocab))
     for ngram, count in ngram_counts.items():
         ngram_model[ngram[:-1]][ngram[-1]] = (count + k) / (prefix_counts[ngram[:-1]] + k * len(vocab))
-    return ngram_model
+    return ngram_model, prefix_probs
 
-def evaluate(ngram_model, ngrams, vocab):
+def evaluate(ngram_model, prefix_probs, ngrams, vocab):
     total_log_prob = 0.0
-    total_log_prob = sum(math.log(ngram_model[ngram[:-1]].get(ngram[-1], 1/len(vocab))) for ngram in ngrams)
+    total_log_prob = sum([math.log(ngram_model[ngram[:-1]].get(ngram[-1], prefix_probs[ngram[:-1]])) if ngram[:-1] in ngram_model else math.log(1/len(vocab)) for ngram in ngrams])
     perplexity = math.exp(-(total_log_prob/len(ngrams)))
     return perplexity
 
 def build_and_apply(n, k, train_ngrams, vocab, test_ngrams, lowercase):
-    ngram_model = train(k, vocab, train_ngrams)
-    perplexity = evaluate(ngram_model, test_ngrams, vocab)
+    ngram_model, prefix_probs = train(k, vocab, train_ngrams)
+    perplexity = evaluate(ngram_model, prefix_probs, test_ngrams, vocab)
     pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["Model", "k", "Lowercase", "Perplexity"]])
     pt.add_row(["Bigram", k, lowercase, perplexity]) if n == 2 else pt.add_row(["Trigram", k, lowercase, perplexity])
     print(pt)
