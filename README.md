@@ -1,7 +1,7 @@
 # NLP-Various-Implementations
 This repository contains all NLP course assignments.
 
-## ```Assignment.1a``` | Tokenization using NLTK, SpaCy, and BERT
+## Assignment.1a | Tokenization using NLTK, SpaCy, and BERT
 This project provides a Python implementation of tokenization and frequency analysis on text data using three different libraries: NLTK, SpaCy, and Transformers. It includes functions to tokenize text using each of these libraries and then analyze the frequency of the resulting tokens, providing tables and graphs to visualize the results.
 
 * **Implement manual feature extraction:** Identifies and describes the most common features that define the internal structure of the text-datasets (training & testing). These features include: Single Letter Frequencies, Letter Occurencies in k-letter words, Letter Position Frequencies and Double Letters Frequencies.
@@ -22,14 +22,7 @@ The following python packages are required for the code to run:
 
 **Alternatively:** you can download [requirements.txt](https://github.com/nataliakoliou/ML-Ciphertext-Decryption/blob/main/requirements.txt) and run ```pip install -r requirements.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
 
-
-## Acknowledgments
-I would like to express my gratitude to [Interactive Maths](https://crypto.interactive-maths.com/mixed-alphabet-cipher.html) for providing valuable information and resources, that contributed to the development of my project.
-
-All of the books used as training & testing datasets in this project, were obtained from [Project Gutenberg](https://www.gutenberg.org/). Therefore, I would like to acknowledge its invaluable contribution in making these texts freely available for research and analysis.
-
-## Conclusion
-This code provides a basic implementation of an ML Ciphertext Decryption Algorithm. Users are encouraged to modify the training/testing datasets or the feature-tuple, to observe the impact on the total performance and accuracy.
+> The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/ML-Ciphertext-Decryption/blob/main/requirements.txt). Please note that in order to run the code, you should have this text file in your local folder.
 
 ## Author
 Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
