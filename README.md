@@ -23,9 +23,9 @@ The following python packages are required for the code to run:
 * Transformers: ```pip install transformers```
 * PrettyTable: ```pip install prettytable```
 
-**Alternatively:** you can download [requirements-1a.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/requirements-1a.txt) and run ```pip install -r requirements-1a.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+**Alternatively:** you can download [requirements-1a.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/Assignment-1a/requirements-1a.txt) and run ```pip install -r requirements-1a.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
 
-**```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
+**```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/Assignment-1a/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
 
 ---
 ## Assignment.1b | N-gram Language Models
@@ -44,9 +44,9 @@ The following python packages are required for the code to run:
 * Matplotlib: ```pip install matplotlib```
 * PrettyTable: ```pip install prettytable```
 
-**Alternatively:** you can download [requirements-1b.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/requirements-1b.txt) and run ```pip install -r requirements-1b.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+**Alternatively:** you can download [requirements-1b.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/Assignment-1b/requirements-1b.txt) and run ```pip install -r requirements-1b.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
 
-**```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
+**```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/Assignment-1b/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
 
 ## Author
 Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
