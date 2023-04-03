@@ -23,12 +23,12 @@ The following python packages are required for the code to run:
 * Transformers: ```pip install transformers```
 * PrettyTable: ```pip install prettytable```
 
-**Alternatively:** you can download [requirements.txt](https://github.com/nataliakoliou/ML-Ciphertext-Decryption/blob/main/requirements.txt) and run ```pip install -r requirements.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+**Alternatively:** you can download [requirements-1a.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/requirements-1a.txt) and run ```pip install -r requirements-1a.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
 
 **```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
 
 ---
-## Assignment.1b | Tokenization using NLTK, SpaCy, and BERT
+## Assignment.1b | N-gram Language Models
 This project provides a Python implementation of tokenization and frequency analysis on text data using three different libraries: NLTK, SpaCy, and Transformers. It includes functions to tokenize text using each of these libraries and then analyze the frequency of the resulting tokens, providing tables and graphs to visualize the results.
 
 **In this part of the project we:**
@@ -44,7 +44,7 @@ The following python packages are required for the code to run:
 * Matplotlib: ```pip install matplotlib```
 * PrettyTable: ```pip install prettytable```
 
-**Alternatively:** you can download [requirements.txt](https://github.com/nataliakoliou/ML-Ciphertext-Decryption/blob/main/requirements.txt) and run ```pip install -r requirements.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+**Alternatively:** you can download [requirements-1b.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/requirements-1b.txt) and run ```pip install -r requirements-1b.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
 
 **```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
 
