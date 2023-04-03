@@ -39,7 +39,7 @@ def tokenize(text, display):
     for i in range(max(map(len, [nltk_tokens, spacy_tokens, bert_tokens]))):
         table.add_row([t[i] if i < len(t) else '' for t in [nltk_tokens, spacy_tokens, bert_tokens]])
     print(table) if display else None
-        
+
     return nltk_tokens, spacy_tokens, bert_tokens
     
 def nltk_tokenize(text):
@@ -161,26 +161,19 @@ def draw_distribution(A, nltk_tokens, spacy_tokens, bert_tokens):
     graph(np.log10(spacy_x), np.log10(spacy_y), np.log10(spacy_zipf), title="SpaCy Token Frequency Distribution", xlabel="Token Rank", ylabel="Token Frequency", labels=["SpaCy", "Zipf"])
     graph(np.log10(bert_x), np.log10(bert_y), np.log10(bert_zipf), title="BERT Token Frequency Distribution", xlabel="Token Rank", ylabel="Token Frequency", labels=["BERT", "Zipf"])
 
-def main():
-    text = read('wsj_untokenized.txt')
-    sentence = " ''Cosby'' is down a full ratings point in the week of Oct. 2-8 over the same week a year ago, according to A.C. Nielsen Co. Mr. Gillespie at Viacom says the ratings are rising."
+##########################################################################################################################################################################################
     
-    # QUESTION.1 & QUESTION.2
-    t1a, t2a, t3a = tokenize(text, False)
-    count(t1a, t2a, t3a)
-    
-    # QUESTION.3
-    t1b, t2b, t3b = tokenize(sentence, True)
-    
-    # QUESTION.4
-    get_statistics(t1a, t2a, t3a)
-    
-    # QUESTION.5
-    get_occurancies(t1a, t2a, t3a)
-    
-    # QUESTION.6
-    alphas = find_optimal_A(t1a, t2a, t3a)
-    draw_distribution(alphas, t1a, t2a, t3a)
-    
-if __name__ == "__main__":
-    main()
+text = read('wsj_untokenized.txt')
+
+t1a, t2a, t3a = tokenize(text, False)
+count(t1a, t2a, t3a)
+
+sentence = " ''Cosby'' is down a full ratings point in the week of Oct. 2-8 over the same week a year ago, according to A.C. Nielsen Co. Mr. Gillespie at Viacom says the ratings are rising."
+t1b, t2b, t3b = tokenize(sentence, True)
+
+get_statistics(t1a, t2a, t3a)
+
+get_occurancies(t1a, t2a, t3a)
+
+alphas = find_optimal_A(t1a, t2a, t3a)
+draw_distribution(alphas, t1a, t2a, t3a)
