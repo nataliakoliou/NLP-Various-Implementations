@@ -29,7 +29,7 @@ The following python packages are required for the code to run:
 
 ---
 ## Assignment.1b | N-gram Language Models
-This project provides a Python implementation of tokenization and frequency analysis on text data using three different libraries: NLTK, SpaCy, and Transformers. It includes functions to tokenize text using each of these libraries and then analyze the frequency of the resulting tokens, providing tables and graphs to visualize the results.
+This project provides a Python implementation of an n-gram language model that can generate text based on the patterns found in a given corpus. It uses a probabilistic approach to predict the likelihood of the next word in a sequence, based on the previous n-1 words. The model can be trained on any text data, allowing it to capture the nuances of different writing styles and genres. It also includes functions to generate text based on the trained model, allowing for the creation of new and unique writing.
 
 **In this part of the project we:**
 * implemented a natural language processing algorithm using N-grams.
