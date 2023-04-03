@@ -1,7 +1,6 @@
 # NLP-Various-Implementations
 This repository contains all NLP course assignments.
 
----
 ## Assignment.1a | Tokenization using NLTK, SpaCy, and BERT
 This project provides a Python implementation of tokenization and frequency analysis on text data using three different libraries: NLTK, SpaCy, and Transformers. It includes functions to tokenize text using each of these libraries and then analyze the frequency of the resulting tokens, providing tables and graphs to visualize the results.
 
