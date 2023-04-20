@@ -46,3 +46,13 @@ get_common_words(10, ['country', 'crying', 'Rachmaninoff', 'espresso'], sims)
 sims = get_similar_words(10, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['student'], [], [], False)
 sims = get_similar_words(10, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['student'], [], ['university'], False)
 sims = get_similar_words(10, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['student'], [], ['elementary','middle','high'], False)
+
+sims = get_similar_words(2, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['king - man + woman'], ['king','woman'], ['man'], True)
+sims = get_similar_words(2, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['france - paris + tokyo'], ['france','tokyo'], ['paris'], True)
+sims = get_similar_words(2, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['trees - apples + grapes'], ['trees','grapes'], ['apples'], True)
+sims = get_similar_words(2, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['swimming - walking + walked'], ['swimming','walked'], ['walking'], True)
+sims = get_similar_words(2, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['doctor - father + mother'], ['doctor','mother'], ['father'], True)
+
+sims = get_similar_words(2, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['russian - pelmeni + dumplings'], ['russian','dumplings'], ['pelmeni'], True)
+sims = get_similar_words(2, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['piano - sonata + symphony'], ['piano','symphony'], ['sonata'], True)
+sims = get_similar_words(2, {'Word2vec': w2v_model, 'GloVe': glove_model}, ['bad - war + peace'], ['bad','peace'], ['war'], True)
