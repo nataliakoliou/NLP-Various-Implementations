@@ -1,14 +1,9 @@
-"""
-AG News Topic Classification: Building on the scikit-learn library of machine learning functions, implement them following text classification approaches (in all cases, the texts to are converted to lowercase):
-• Multinomial Naïve Bayes3 with text representation according to the approach
-tf-idf word uni-grams4.
-"""
-
 import csv
 import time
 from prettytable import PrettyTable
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import LinearSVC
 
 def load_dataset(path):
     with open(path, "r", encoding="utf-8") as f:
@@ -43,7 +38,13 @@ train_data = load_dataset("C:/Users/natalia/pyproj/nlp-proj/assignment-2b/train.
 test_data = load_dataset("C:/Users/natalia/pyproj/nlp-proj/assignment-2b/test.csv") 
 
 accuracy, dimensionality, time_cost = run_model(train_data, test_data, 1, "word", MultinomialNB())
-visualize("Multinomial Naïve Bayes with tf-idf word uni-grams", accuracy, dimensionality, time_cost)
+visualize("Multinomial Naïve Bayes using tf-idf word uni-grams", accuracy, dimensionality, time_cost)
 
 accuracy, dimensionality, time_cost = run_model(train_data, test_data, 3, "char", MultinomialNB())
-visualize("Multinomial Naïve Bayes with tf-idf character tri-grams", accuracy, dimensionality, time_cost)
+visualize("Multinomial Naïve Bayes using tf-idf character tri-grams", accuracy, dimensionality, time_cost)
+
+accuracy, dimensionality, time_cost = run_model(train_data, test_data, 1, "word", LinearSVC(C=1))
+visualize("Support Vector Machines using tf-idf word uni-grams", accuracy, dimensionality, time_cost)
+
+accuracy, dimensionality, time_cost = run_model(train_data, test_data, 3, "char", LinearSVC(C=1))
+visualize("Support Vector Machines using tf-idf character tri-grams", accuracy, dimensionality, time_cost)
