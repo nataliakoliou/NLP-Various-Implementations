@@ -10,9 +10,25 @@ def get_similar_words(n, models, words, pos, neg):
         temp = []
         pt = PrettyTable(field_names=[f"\033[1m{word}\033[0m" for word in words])
         for word in words:
-            temp.extend([f"{s[0]}: {s[1]:.4f}" for s in model.most_similar(positive=pos+[word], negative=neg, topn=n)]) if word in model else temp.extend(["N/A"] * n)
+            temp.extend([f"{s[0]}: {s[1]:.4f}" for s in model.most_similar(positive=pos+[word], negative=neg, topn=n)]) if word in model and all(p in model for p in pos) and all(n in model for n in neg) else temp.extend(["N/A"] * n)
         for i in range(n):
             pt.add_row([temp[i + j*n] for j in range(len(words))])
+        sims.append([elem.split(':')[0].strip() if ":" in elem else "N/A" for elem in temp])
+        print('\033[1m' + f"\n{model_name} Model:" + '\033[0m')
+        pt.align = 'l'
+        print(pt)
+    return sims
+
+def get_similar_words(n, models, data, pos, neg, analogy):
+    sims = []
+    for model_name, model in models.items():
+        temp = []
+        pt = PrettyTable(field_names=[f"\033[1m{d}\033[0m" for d in data])
+        for d in data:
+            extra = [] if analogy else [d]
+            temp.extend([f"{s[0]}: {s[1]:.4f}" for s in model.most_similar(positive=pos+extra, negative=neg, topn=n)]) if all(e in model for e in extra) and all(p in model for p in pos) and all(n in model for n in neg) else temp.extend(["N/A"] * n)
+        for i in range(n):
+            pt.add_row([temp[i + j*n] for j in range(len(data))])
         sims.append([elem.split(':')[0].strip() if ":" in elem else "N/A" for elem in temp])
         print('\033[1m' + f"\n{model_name} Model:" + '\033[0m')
         pt.align = 'l'
