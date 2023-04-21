@@ -95,12 +95,12 @@ vocab = build_vocab([train_dataset, test_dataset], MIN_FREQ, PADDED, UNKNOWN)
 
 classifier, loss_fn, optimizer = setup_model(device, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, LEARNING_RATE)
 
-"""
+#"""
 print('\nModel:')
 print(classifier)
 print('Total parameters: ',count_parameters(classifier))
 print('\n\n')
-"""
+#"""
 
 train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
 _, Y_actual, Y_preds = evaluate_model(classifier, loss_fn, test_loader)
