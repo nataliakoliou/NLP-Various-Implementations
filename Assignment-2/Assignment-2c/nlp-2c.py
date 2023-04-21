@@ -52,8 +52,7 @@ class model(nn.Module):
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-def setup_model(device, classes, train_dataset, test_dataset, min_freq, padded, unknown, embedding_dim, hidden_dim, learning_rate):
-    vocab = build_vocab([train_dataset, test_dataset], min_freq, padded, unknown)
+def setup_model(device, classes, vocab, embedding_dim, hidden_dim, learning_rate):
     classifier = model(len(vocab), embedding_dim, hidden_dim, len(classes)).to(device)
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam([param for param in classifier.parameters() if param.requires_grad == True],lr=learning_rate)
@@ -92,7 +91,9 @@ MIN_FREQ = 10 ; MAX_WORDS = 25; EPOCHS = 15; LEARNING_RATE = 1e-3; BATCH_SIZE = 
 train_dataset, test_dataset = load_dataset("C:/Users/natalia/pyproj/nlp-proj/assignment-2c/train.csv"), load_dataset("C:/Users/natalia/pyproj/nlp-proj/assignment-2c/test.csv")
 train_loader, test_loader = generate_loader(train_dataset, BATCH_SIZE, True), generate_loader(test_dataset, BATCH_SIZE, False)
 
-classifier, loss_fn, optimizer = setup_model(device, classes, train_dataset, test_dataset, MIN_FREQ, PADDED, UNKNOWN, EMBEDDING_DIM, HIDDEN_DIM, LEARNING_RATE)
+vocab = build_vocab([train_dataset, test_dataset], MIN_FREQ, PADDED, UNKNOWN)
+
+classifier, loss_fn, optimizer = setup_model(device, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, LEARNING_RATE)
 
 """
 print('\nModel:')
