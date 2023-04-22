@@ -1,4 +1,8 @@
 import torch
+import time
+import random
+from collections import defaultdict
+import numpy as np
 from torch.utils.data import DataLoader
 from torchtext.data import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
@@ -8,6 +12,7 @@ from torch.nn import functional as F
 import pandas as pd
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from prettytable import PrettyTable
 
 def set_device(primary, secondary):
     return torch.device(primary if torch.cuda.is_available() else secondary) # device used to perform the computations for the machine learning model
@@ -36,39 +41,64 @@ def build_vocab(datasets, min_freq, padded, unknown):
     vocab.set_default_index(vocab[unknown])
     return vocab
 
-class model(nn.Module):
-    def __init__(self,input_dim, embedding_dim, hidden_dim, output_dim):  # defines the constructor of the nn model
-        super(model, self).__init__()
+def get_directions(bidirectional):
+    return 2 if bidirectional else 1
+
+class RNN_model(nn.Module):
+    def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim):
+        super(RNN_model, self).__init__()
         self.embedding_layer = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
-        self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_dim, batch_first=True)
-        self.linear = nn.Linear(hidden_dim, output_dim)
+        self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=bidirectional, batch_first=True)
+        self.hidden_size = hidden_dim * get_directions(bidirectional)
+        self.linear = nn.Linear(hidden_dim * get_directions(bidirectional), output_dim)
     def forward(self, X_batch):
         embeddings = self.embedding_layer(X_batch)
         output, hidden = self.rnn(embeddings)
-        logits = self.linear(output[:,-1])  # The last output of RNN is used for sequence classification
+        output_concat = torch.cat([output[:, :, :self.hidden_size], output[:, :, self.hidden_size:]], dim=2) # concatenates outputs
+        logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated RNN is used for sequence classification
+        probs = F.softmax(logits, dim=1)
+        return probs
+
+class LSTM_model(nn.Module):
+    def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim):
+        super(LSTM_model, self).__init__()
+        self.embedding_layer = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
+        self.lstm = nn.LSTM(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=bidirectional, batch_first=True)
+        self.hidden_size = hidden_dim * get_directions(bidirectional)
+        self.linear = nn.Linear(hidden_dim * get_directions(bidirectional), output_dim)
+    def forward(self, X_batch):
+        embeddings = self.embedding_layer(X_batch)
+        output, (hidden, cell) = self.lstm(embeddings)
+        output_concat = torch.cat([output[:, :, :self.hidden_size], output[:, :, self.hidden_size:]], dim=2) # concatenates outputs
+        logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated LSTM is used for sequence classification
         probs = F.softmax(logits, dim=1)
         return probs
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-def setup_model(device, classes, vocab, embedding_dim, hidden_dim, learning_rate):
-    classifier = model(len(vocab), embedding_dim, hidden_dim, len(classes)).to(device)
+def setup_model(device, model, classes, vocab, embedding_dim, hidden_dim, num_layers, bidirectional, learning_rate):
+    classifier = model(len(vocab), embedding_dim, hidden_dim, num_layers, bidirectional, len(classes)).to(device)
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam([param for param in classifier.parameters() if param.requires_grad == True],lr=learning_rate)
     return classifier, loss_fn, optimizer
 
 def train_model(classifier, loss_fn, optimizer, train_loader, epochs):
+    times = []
     for i in range(1, epochs+1):
         classifier.train()
         print('Epoch:',i)
         losses = []
+        start_time = time.time()
         for X, Y in tqdm(train_loader):
             Y_preds = classifier(X)
             loss = loss_fn(Y_preds, Y)
             losses.append(loss.item())
             optimizer.zero_grad(); loss.backward(); optimizer.step()
+        epoch_time = time.time() - start_time
+        times.append(epoch_time)
         print("Train Loss : {:.3f}".format(torch.tensor(losses).mean()))
+    return sum(times)/len(times)
 
 def evaluate_model(classifier, loss_fn, test_loader):
     classifier.eval()
@@ -80,35 +110,120 @@ def evaluate_model(classifier, loss_fn, test_loader):
             losses.append(loss.item())
             Y_actual.append(Y)
             Y_preds.append(preds.argmax(dim=-1))
+        misclass_data = detect_misclassification(to_dict(test_loader), np.array(Y_preds))
         Y_actual, Y_preds = torch.cat(Y_actual), torch.cat(Y_preds)
-    return torch.tensor(losses).mean(), Y_actual.detach().cpu().numpy(), Y_preds.detach().cpu().numpy()      # returns mean loss, actual labels and predicted labels 
+    return torch.tensor(losses).mean(), Y_actual.detach().cpu().numpy(), Y_preds.detach().cpu().numpy(), misclass_data      # returns mean loss, actual labels and predicted labels 
+
+def detect_misclassification(test_data, y_pred):
+    misclass_data = defaultdict(list)
+    for i in range(len(test_data["labels"])):
+        true_label = test_data["labels"][i]
+        predicted_label = y_pred[i]
+        if true_label != predicted_label:
+            text = test_data["features"][i]
+            misclass_data[true_label].append((text, predicted_label))
+    return misclass_data
+
+def analyze_results(models, _1UniRNN, _1BiRNN, _2BiRNN, _1UniLSTM, _1BiLSTM, _2BiLSTM):
+    
+    common_misclass_data = defaultdict(list)
+    for true_label in _1UniRNN.keys():
+        for text, label in _1UniRNN[true_label]:
+            labels = [label] + [next((p for t, p in model[true_label] if t == text), '') for model in [_1BiRNN, _2BiRNN, _1UniLSTM, _1BiLSTM, _2BiLSTM]]
+            common_misclass_data[true_label].append((text, labels)) if all(labels) else None
+
+    misclass_counts = {true_label: len(misclass_tuple) for true_label, misclass_tuple in common_misclass_data.items()}
+    pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["True Label", "Misclassification Times"]])
+    pt.add_rows([(true_label, count) for true_label, count in misclass_counts.items()])
+    print(pt)
+
+    misclass_freqs = defaultdict(int)
+    for true_label, values in common_misclass_data.items():
+        for text, pred_labels in values:
+            for pl in pred_labels:
+                misclass_freqs[(true_label, pl)] += 1
+    max_tuple, max_count = max(misclass_freqs.items(), key=lambda x: x[1])
+    print("\033[1m" + "Most common Misclassification Pair:" + "\033[0m")
+    pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["True Label", "Predicted Label", "Frequency"]])
+    pt.add_row([max_tuple[0], max_tuple[1], max_count])
+    print(pt)
+
+    rand_true_label = random.choice(list(common_misclass_data.keys()))
+    rand_misclass_tuple = random.choice(common_misclass_data[rand_true_label])
+    print("\033[1m" + "Text: " + "\033[0m" + rand_misclass_tuple[0] + "\033[1m" + "\nTrue Label: " + "\033[0m" + rand_true_label)
+    pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["Model", "Prediction"]])
+    pt.add_rows([(model, rand_misclass_tuple[1][idx]) for idx, model in enumerate(models)])
+    print(pt)
+
+def visualize(models, accuracies, parameters, time_costs):
+    pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["Model", "Accuracy", "Parameters", "Time Cost"]])
+    for i, model in enumerate(models):
+        pt.add_row([model, accuracies[i], parameters[i], time_costs[i]])
+    print(pt)
+
+def to_dict(loader):
+    return {"features": [batch[1] for batch in loader], "labels": [batch[0] for batch in loader]}
+
+#############################################################################################################################################################################
 
 device = set_device("cuda","cpu")
 tokenizer = get_tokenizer("basic_english")
-classes = ["World", "Sports", "Business", "Sci/Tech"]
+models = ["1Uni-RNN", "1Bi-RNN", "2Bi-RNN", "1Uni-LSTM", "1Bi-LSTM", "2Bi-LSTM"]; classes = ["World", "Sports", "Business", "Sci/Tech"]; accuracies = []; parameters = []; time_costs = []
 MIN_FREQ = 10 ; MAX_WORDS = 25; EPOCHS = 15; LEARNING_RATE = 1e-3; BATCH_SIZE = 1024; EMBEDDING_DIM = 100; HIDDEN_DIM = 64; PADDED = "<PAD>"; UNKNOWN = "<UNK>"
 
 train_dataset, test_dataset = load_dataset("C:/Users/natalia/pyproj/nlp-proj/assignment-2c/train.csv"), load_dataset("C:/Users/natalia/pyproj/nlp-proj/assignment-2c/test.csv")
+print(test_dataset[:3])
 train_loader, test_loader = generate_loader(train_dataset, BATCH_SIZE, True), generate_loader(test_dataset, BATCH_SIZE, False)
 
 vocab = build_vocab([train_dataset, test_dataset], MIN_FREQ, PADDED, UNKNOWN)
 
-classifier, loss_fn, optimizer = setup_model(device, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, LEARNING_RATE)
+# CASE.A) [model: RNN, num_layers: 1, bidirectional: False]
+classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, False, LEARNING_RATE)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_1UniRNN = evaluate_model(classifier, loss_fn, test_loader)
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
 
-#"""
-print('\nModel:')
-print(classifier)
-print('Total parameters: ',count_parameters(classifier))
-print('\n\n')
-#"""
+# CASE.B) [model: RNN, num_layers: 1, bidirectional: True]
+classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, True, LEARNING_RATE)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_1BiRNN = evaluate_model(classifier, loss_fn, test_loader)
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
 
-train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
-_, Y_actual, Y_preds = evaluate_model(classifier, loss_fn, test_loader)
+# CASE.C) [model: RNN, num_layers: 2, bidirectional: True]
+classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 2, True, LEARNING_RATE)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_2BiRNN = evaluate_model(classifier, loss_fn, test_loader)
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
 
-#"""
-print("\nTest Accuracy : {:.3f}".format(accuracy_score(Y_actual, Y_preds)))
-print("\nClassification Report : ")
-print(classification_report(Y_actual, Y_preds, target_names=classes))
-print("\nConfusion Matrix : ")
-print(confusion_matrix(Y_actual, Y_preds))
-#"""
+# CASE.D) [model: LSTM, num_layers: 1, bidirectional: False]
+classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, False, LEARNING_RATE)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_1UniLSTM = evaluate_model(classifier, loss_fn, test_loader)
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+# CASE.E) [model: LSTM, num_layers: 1, bidirectional: True]
+classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, True, LEARNING_RATE)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_1BiLSTM = evaluate_model(classifier, loss_fn, test_loader)
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+# CASE.F) [model: LSTM, num_layers: 2, bidirectional: True]
+classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 2, True, LEARNING_RATE)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_2BiLSTM = evaluate_model(classifier, loss_fn, test_loader)
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+visualize(models, accuracies, parameters, time_costs)
+analyze_results(models, misclass_data_1UniRNN, misclass_data_1BiRNN, misclass_data_2BiRNN, misclass_data_1UniLSTM, misclass_data_1BiLSTM, misclass_data_2BiLSTM)
