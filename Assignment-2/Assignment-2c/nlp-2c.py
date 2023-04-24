@@ -16,17 +16,6 @@ from prettytable import PrettyTable
 
 def set_device(primary, secondary):
     return torch.device(primary if torch.cuda.is_available() else secondary) # device used to perform the computations for the machine learning model
-"""
-def load_dataset(path):
-    data = pd.read_csv(path)
-    return [(label, data['Title'][i] + ' ' + data['Description'][i]) for i, label in enumerate(data['Class Index'])]
-"""
-"""
-def load_dataset(path, features, label):
-    data = pd.read_csv(path)
-    text = data[features].astype(str).agg(' '.join, axis=1)
-    return [(data[label][i], text[i]) for i in range(len(data))]
-"""
 
 def replace_labels(dataset, categorical, numerical):
     mapping = {categorical[0]: numerical[0], categorical[1]: numerical[1]}
@@ -233,7 +222,7 @@ def to_dict(tuples_list):
 
 device = set_device("cuda","cpu")
 tokenizer = get_tokenizer("basic_english")
-"""
+
 models = ["1Uni-RNN", "1Bi-RNN", "2Bi-RNN", "1Uni-LSTM", "1Bi-LSTM", "2Bi-LSTM"]; classes = ["World", "Sports", "Business", "Sci/Tech"]; accuracies = []; parameters = []; time_costs = []
 MIN_FREQ = 10 ; MAX_WORDS = 25; EPOCHS = 1; LEARNING_RATE = 1e-3; BATCH_SIZE = 1024; EMBEDDING_DIM = 100; HIDDEN_DIM = 64; PADDED = "<PAD>"; UNKNOWN = "<UNK>"
 
@@ -299,7 +288,7 @@ visualize(models, accuracies, parameters, time_costs)
 analyze_results(models, misclass_data_1UniRNN, misclass_data_1BiRNN, misclass_data_2BiRNN, misclass_data_1UniLSTM, misclass_data_1BiLSTM, misclass_data_2BiLSTM)
 
 #############################################################################################################################################################################
-
+"""
 models = ["1Uni-preRNN", "1Bi-preRNN", "2Bi-preRNN", "1Uni-preLSTM", "1Bi-preLSTM", "2Bi-preLSTM"]; accuracies = []; parameters = []; time_costs = []
 embeddings = load_embeddings("glove.6B.100d.txt", vocab, EMBEDDING_DIM)
 
@@ -404,7 +393,7 @@ parameters.append(count_parameters(classifier))
 time_costs.append(time_cost)
 
 visualize(models, accuracies, parameters, time_costs)
-"""
+
 #############################################################################################################################################################################
 
 models = ["1Uni-RNN", "1Bi-RNN", "2Bi-RNN", "1Uni-LSTM", "1Bi-LSTM", "2Bi-LSTM"]; classes = ["Positive", "Negative"]; accuracies = []; parameters = []; time_costs = []
@@ -467,3 +456,4 @@ parameters.append(count_parameters(classifier))
 time_costs.append(time_cost)
 
 visualize(models, accuracies, parameters, time_costs)
+"""
