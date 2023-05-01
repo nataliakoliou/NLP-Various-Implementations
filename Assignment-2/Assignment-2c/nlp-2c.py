@@ -15,11 +15,6 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 def set_device(primary, secondary):
     return torch.device(primary if torch.cuda.is_available() else secondary) # device used to perform the computations for the machine learning model
 
-device = set_device("cuda","cpu")
-tokenizer = get_tokenizer("basic_english")
-models = ["1Uni-RNN", "1Bi-RNN", "2Bi-RNN", "1Uni-LSTM", "1Bi-LSTM", "2Bi-LSTM"]; classes = ["World", "Sports", "Business", "Sci/Tech"]; accuracies = []; parameters = []; time_costs = []
-MIN_FREQ = 10 ; MAX_WORDS = 25; EPOCHS = 15; LEARNING_RATE = 1e-3; BATCH_SIZE = 1024; EMBEDDING_DIM = 100; HIDDEN_DIM = 64; PADDED = "<PAD>"; UNKNOWN = "<UNK>"
-
 def load_dataset(path, features, label, percent, mode):
     data = pd.read_csv(path)
     data = pd.concat([data.iloc[:1], data.iloc[1:].sample(frac=1)], ignore_index=True)  # shuffle all rows except the first one
@@ -32,10 +27,15 @@ def load_dataset(path, features, label, percent, mode):
     text = data[features].astype(str).agg(' '.join, axis=1)
     return [(data[label][i], text[i]) for i in range(len(data))]
 
-train_dataset, test_dataset = load_dataset("train.csv", ["Title","Description"], "Class Index", 100, "start"), load_dataset("test.csv", ["Title","Description"], "Class Index", 100, "start")
-
-def generate_loader(dataset, max_words, batch_size, shuffle):
-    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=lambda b: collate_batch(b, max_words))
+def load_embeddings(path, vocab, dimension):
+    with open(path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+    embeddings = torch.zeros(len(vocab), dimension)
+    for line in lines:
+        word, vec = line.strip().split(' ', 1)
+        if word in vocab:
+            embeddings[vocab[word]] = torch.tensor([float(x) for x in vec.split()])
+    return embeddings
 
 def collate_batch(batch, max_words):
     Y, X = list(zip(*batch))
@@ -44,25 +44,18 @@ def collate_batch(batch, max_words):
     X = [tokens+([vocab['<PAD>']]* (max_words-len(tokens))) if len(tokens)<max_words else tokens[:max_words] for tokens in X]  # brings all samples to MAX_WORDS length - shorter texts are padded with <PAD> sequences, longer texts are truncated
     return torch.tensor(X, dtype=torch.int32).to(device), Y.to(device)
 
-train_loader, test_loader = generate_loader(train_dataset, MAX_WORDS, BATCH_SIZE, True), generate_loader(test_dataset, MAX_WORDS, BATCH_SIZE, False)
-
-def build_vocab(datasets, min_freq, padded, unknown):
-    vocab = build_vocab_from_iterator(tokenize(datasets), min_freq=min_freq, specials=[padded, unknown])
-    vocab.set_default_index(vocab[unknown])
-    return vocab
+def generate_loader(dataset, max_words, batch_size, shuffle):
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=lambda b: collate_batch(b, max_words))
 
 def tokenize(datasets):
     for dataset in datasets:
         for _, text in dataset:
             yield tokenizer(text)
 
-vocab = build_vocab([train_dataset, test_dataset], MIN_FREQ, PADDED, UNKNOWN)
-
-def setup_model(device, model, classes, vocab, embedding_dim, hidden_dim, num_layers, bidirectional, learning_rate, embeddings, freeze):
-    classifier = model(len(vocab), embedding_dim, hidden_dim, num_layers, bidirectional, len(classes), embeddings, freeze).to(device)
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam([param for param in classifier.parameters() if param.requires_grad == True],lr=learning_rate)
-    return classifier, loss_fn, optimizer
+def build_vocab(datasets, min_freq, padded, unknown):
+    vocab = build_vocab_from_iterator(tokenize(datasets), min_freq=min_freq, specials=[padded, unknown])
+    vocab.set_default_index(vocab[unknown])
+    return vocab
   
 class RNN_model(nn.Module):
     def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim, none, freeze):
@@ -78,11 +71,61 @@ class RNN_model(nn.Module):
         logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated RNN is used for sequence classification
         probs = F.softmax(logits, dim=1)
         return probs
+    
+class LSTM_model(nn.Module):
+    def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim, none, freeze):
+        super(LSTM_model, self).__init__()
+        self.embedding_layer = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
+        self.lstm = nn.LSTM(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=bidirectional, batch_first=True)
+        self.hidden_size = hidden_dim * get_directions(bidirectional)
+        self.linear = nn.Linear(hidden_dim * get_directions(bidirectional), output_dim)
+    def forward(self, X_batch):
+        embeddings = self.embedding_layer(X_batch)
+        output, (hidden, cell) = self.lstm(embeddings)
+        output_concat = torch.cat([output[:, :, :self.hidden_size], output[:, :, self.hidden_size:]], dim=2) # concatenates outputs
+        logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated LSTM is used for sequence classification
+        probs = F.softmax(logits, dim=1)
+        return probs
+    
+class pretrained_RNN_model(nn.Module):
+    def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim, embeddings, freeze):
+        super(pretrained_RNN_model, self).__init__()
+        self.embedding_layer = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
+        self.embedding_layer.weight.data.copy_(embeddings)
+        self.embedding_layer.weight.requires_grad = freeze  # freezes the weights of the embedding layer
+        self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=bidirectional, batch_first=True)
+        self.hidden_size = hidden_dim * get_directions(bidirectional)
+        self.linear = nn.Linear(hidden_dim * get_directions(bidirectional), output_dim)
+    def forward(self, X_batch):
+        embeddings = self.embedding_layer(X_batch)
+        output, hidden = self.rnn(embeddings)
+        output_concat = torch.cat([output[:, :, :self.hidden_size], output[:, :, self.hidden_size:]], dim=2) # concatenates outputs
+        logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated RNN is used for sequence classification
+        probs = F.softmax(logits, dim=1)
+        return probs
 
-def get_directions(bidirectional):
-    return 2 if bidirectional else 1
+class pretrained_LSTM_model(nn.Module):
+    def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim, embeddings, freeze):
+        super(pretrained_LSTM_model, self).__init__()
+        self.embedding_layer = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
+        self.embedding_layer.weight.data.copy_(embeddings)
+        self.embedding_layer.weight.requires_grad = freeze  # freezes the weights of the embedding layer
+        self.lstm = nn.LSTM(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=bidirectional, batch_first=True)
+        self.hidden_size = hidden_dim * get_directions(bidirectional)
+        self.linear = nn.Linear(hidden_dim * get_directions(bidirectional), output_dim)
+    def forward(self, X_batch):
+        embeddings = self.embedding_layer(X_batch)
+        output, (hidden, cell) = self.lstm(embeddings)
+        output_concat = torch.cat([output[:, :, :self.hidden_size], output[:, :, self.hidden_size:]], dim=2) # concatenates outputs
+        logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated LSTM is used for sequence classification
+        probs = F.softmax(logits, dim=1)
+        return probs
 
-classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, False, LEARNING_RATE, None, None)
+def setup_model(device, model, classes, vocab, embedding_dim, hidden_dim, num_layers, bidirectional, learning_rate, embeddings, freeze):
+    classifier = model(len(vocab), embedding_dim, hidden_dim, num_layers, bidirectional, len(classes), embeddings, freeze).to(device)
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam([param for param in classifier.parameters() if param.requires_grad == True],lr=learning_rate)
+    return classifier, loss_fn, optimizer
 
 def train_model(classifier, loss_fn, optimizer, train_loader, epochs):
     times = []
@@ -100,8 +143,6 @@ def train_model(classifier, loss_fn, optimizer, train_loader, epochs):
         times.append(epoch_time)
         print("\033[1mTrain Loss\033[0m: {:.3f}\n".format(torch.tensor(losses).mean()))
     return sum(times)/len(times)
-
-time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
 
 def evaluate_model(classes, classifier, loss_fn, test_loader, test_data):
     classifier.eval()
@@ -130,75 +171,6 @@ def detect_misclassification(test_data, Y_actual, Y_preds):
             text = test_data["features"][i]
             misclass_data[true_label].append((text, predicted_label))
     return misclass_data
-
-def to_dict(tuples_list):
-    return {'features': [d[1] for d in tuples_list], 'labels': [d[0] for d in tuples_list]}
-
-_, Y_actual, Y_preds, misclass_data_1UniRNN = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-accuracies.append(accuracy_score(Y_actual, Y_preds))
-parameters.append(count_parameters(classifier))
-time_costs.append(time_cost)
-
-classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, True, LEARNING_RATE, None, None)
-time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
-_, Y_actual, Y_preds, misclass_data_1BiRNN = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
-accuracies.append(accuracy_score(Y_actual, Y_preds))
-parameters.append(count_parameters(classifier))
-time_costs.append(time_cost)
-
-classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 2, True, LEARNING_RATE, None, None)
-time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
-_, Y_actual, Y_preds, misclass_data_2BiRNN = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
-accuracies.append(accuracy_score(Y_actual, Y_preds))
-parameters.append(count_parameters(classifier))
-time_costs.append(time_cost)
-
-class LSTM_model(nn.Module):
-    def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim, none, freeze):
-        super(LSTM_model, self).__init__()
-        self.embedding_layer = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
-        self.lstm = nn.LSTM(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=bidirectional, batch_first=True)
-        self.hidden_size = hidden_dim * get_directions(bidirectional)
-        self.linear = nn.Linear(hidden_dim * get_directions(bidirectional), output_dim)
-    def forward(self, X_batch):
-        embeddings = self.embedding_layer(X_batch)
-        output, (hidden, cell) = self.lstm(embeddings)
-        output_concat = torch.cat([output[:, :, :self.hidden_size], output[:, :, self.hidden_size:]], dim=2) # concatenates outputs
-        logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated LSTM is used for sequence classification
-        probs = F.softmax(logits, dim=1)
-        return probs
-
-classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, False, LEARNING_RATE, None, None)
-time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
-_, Y_actual, Y_preds, misclass_data_1UniLSTM = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
-accuracies.append(accuracy_score(Y_actual, Y_preds))
-parameters.append(count_parameters(classifier))
-time_costs.append(time_cost)
-
-classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, True, LEARNING_RATE, None, None)
-time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
-_, Y_actual, Y_preds, misclass_data_1BiLSTM = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
-accuracies.append(accuracy_score(Y_actual, Y_preds))
-parameters.append(count_parameters(classifier))
-time_costs.append(time_cost)
-
-classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 2, True, LEARNING_RATE, None, None)
-time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
-_, Y_actual, Y_preds, misclass_data_2BiLSTM = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
-accuracies.append(accuracy_score(Y_actual, Y_preds))
-parameters.append(count_parameters(classifier))
-time_costs.append(time_cost)
-
-def visualize(models, accuracies, parameters, time_costs):
-    pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["Model", "Accuracy", "Parameters", "Time Cost"]])
-    [pt.add_row([model, round(accuracies[i], 4), parameters[i], round(time_costs[i], 4)]) for i, model in enumerate(models)]
-    print(pt)
-
-visualize(models, accuracies, parameters, time_costs)
 
 def analyze_results(classes, models, misclassified):
     common_misclass_data = defaultdict(list)
@@ -238,10 +210,87 @@ def get_random_text(models, common_misclass_data, classes):
     [pt.add_row([model, to_category(rand_misclass_tuple[1][idx], classes)]) for idx, model in enumerate(models)]
     print(pt)
 
+def visualize(models, accuracies, parameters, time_costs):
+    pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["Model", "Accuracy", "Parameters", "Time Cost"]])
+    [pt.add_row([model, round(accuracies[i], 4), parameters[i], round(time_costs[i], 4)]) for i, model in enumerate(models)]
+    print(pt)
+
+def replace_labels(dataset, categorical, numerical):
+    mapping = {categorical[0]: numerical[0], categorical[1]: numerical[1]}
+    return [(mapping[label], text) for label, text in dataset]
+
+def to_dict(tuples_list):
+    return {'features': [d[1] for d in tuples_list], 'labels': [d[0] for d in tuples_list]}
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+def get_directions(bidirectional):
+    return 2 if bidirectional else 1
+
 def to_category(label, classes):
     return classes[label]
 
+##########################################################################################################################################################################################
+device = set_device("cuda","cpu")
+tokenizer = get_tokenizer("basic_english")
+
+models = ["1Uni-RNN", "1Bi-RNN", "2Bi-RNN", "1Uni-LSTM", "1Bi-LSTM", "2Bi-LSTM"]; classes = ["World", "Sports", "Business", "Sci/Tech"]; accuracies = []; parameters = []; time_costs = []
+MIN_FREQ = 10 ; MAX_WORDS = 25; EPOCHS = 15; LEARNING_RATE = 1e-3; BATCH_SIZE = 1024; EMBEDDING_DIM = 100; HIDDEN_DIM = 64; PADDED = "<PAD>"; UNKNOWN = "<UNK>"
+
+train_dataset, test_dataset = load_dataset("train.csv", ["Title","Description"], "Class Index", 100, "start"), load_dataset("test.csv", ["Title","Description"], "Class Index", 100, "start")
+train_loader, test_loader = generate_loader(train_dataset, MAX_WORDS, BATCH_SIZE, True), generate_loader(test_dataset, MAX_WORDS, BATCH_SIZE, False)
+vocab = build_vocab([train_dataset, test_dataset], MIN_FREQ, PADDED, UNKNOWN)
+
+classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, False, LEARNING_RATE, None, None)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_1UniRNN = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, True, LEARNING_RATE, None, None)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_1BiRNN = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+classifier, loss_fn, optimizer = setup_model(device, RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 2, True, LEARNING_RATE, None, None)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_2BiRNN = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, False, LEARNING_RATE, None, None)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_1UniLSTM = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, True, LEARNING_RATE, None, None)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_1BiLSTM = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+classifier, loss_fn, optimizer = setup_model(device, LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 2, True, LEARNING_RATE, None, None)
+time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
+_, Y_actual, Y_preds, misclass_data_2BiLSTM = evaluate_model(classes, classifier, loss_fn, test_loader, to_dict(test_dataset))
+accuracies.append(accuracy_score(Y_actual, Y_preds))
+parameters.append(count_parameters(classifier))
+time_costs.append(time_cost)
+
+visualize(models, accuracies, parameters, time_costs)
+
+##########################################################################################################################################################################################
+
 analyze_results(classes, models, [misclass_data_1UniRNN, misclass_data_1BiRNN, misclass_data_2BiRNN, misclass_data_1UniLSTM, misclass_data_1BiLSTM, misclass_data_2BiLSTM])
+
+##########################################################################################################################################################################################
 
 MAX_WORDS = 50
 train_loader, test_loader = generate_loader(train_dataset, MAX_WORDS, BATCH_SIZE, True), generate_loader(test_dataset, MAX_WORDS, BATCH_SIZE, False)
@@ -291,38 +340,13 @@ time_costs.append(time_cost)
 
 visualize(models, accuracies, parameters, time_costs)
 
+##########################################################################################################################################################################################
+
 MAX_WORDS = 25
-train_loader, test_loader = generate_loader(train_dataset, MAX_WORDS, BATCH_SIZE, True), generate_loader(test_dataset, MAX_WORDS, BATCH_SIZE, False)
 models = ["1Uni-preRNN", "1Bi-preRNN", "2Bi-preRNN", "1Uni-preLSTM", "1Bi-preLSTM", "2Bi-preLSTM"]; accuracies = []; parameters = []; time_costs = []
 
-def load_embeddings(path, vocab, dimension):
-    with open(path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    embeddings = torch.zeros(len(vocab), dimension)
-    for line in lines:
-        word, vec = line.strip().split(' ', 1)
-        if word in vocab:
-            embeddings[vocab[word]] = torch.tensor([float(x) for x in vec.split()])
-    return embeddings
-
 embeddings = load_embeddings("glove.6B.100d.txt", vocab, EMBEDDING_DIM)
-
-class pretrained_RNN_model(nn.Module):
-    def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim, embeddings, freeze):
-        super(pretrained_RNN_model, self).__init__()
-        self.embedding_layer = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
-        self.embedding_layer.weight.data.copy_(embeddings)
-        self.embedding_layer.weight.requires_grad = freeze  # freezes the weights of the embedding layer
-        self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=bidirectional, batch_first=True)
-        self.hidden_size = hidden_dim * get_directions(bidirectional)
-        self.linear = nn.Linear(hidden_dim * get_directions(bidirectional), output_dim)
-    def forward(self, X_batch):
-        embeddings = self.embedding_layer(X_batch)
-        output, hidden = self.rnn(embeddings)
-        output_concat = torch.cat([output[:, :, :self.hidden_size], output[:, :, self.hidden_size:]], dim=2) # concatenates outputs
-        logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated RNN is used for sequence classification
-        probs = F.softmax(logits, dim=1)
-        return probs
+train_loader, test_loader = generate_loader(train_dataset, MAX_WORDS, BATCH_SIZE, True), generate_loader(test_dataset, MAX_WORDS, BATCH_SIZE, False)
 
 classifier, loss_fn, optimizer = setup_model(device, pretrained_RNN_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, False, LEARNING_RATE, embeddings, False)
 time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
@@ -344,23 +368,6 @@ _, Y_actual, Y_preds, misclass_data_2BiRNN = evaluate_model(classes, classifier,
 accuracies.append(accuracy_score(Y_actual, Y_preds))
 parameters.append(count_parameters(classifier))
 time_costs.append(time_cost)
-
-class pretrained_LSTM_model(nn.Module):
-    def __init__(self, input_dim, embedding_dim, hidden_dim, num_layers, bidirectional, output_dim, embeddings, freeze):
-        super(pretrained_LSTM_model, self).__init__()
-        self.embedding_layer = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
-        self.embedding_layer.weight.data.copy_(embeddings)
-        self.embedding_layer.weight.requires_grad = freeze  # freezes the weights of the embedding layer
-        self.lstm = nn.LSTM(input_size=embedding_dim, hidden_size=hidden_dim, num_layers=num_layers, bidirectional=bidirectional, batch_first=True)
-        self.hidden_size = hidden_dim * get_directions(bidirectional)
-        self.linear = nn.Linear(hidden_dim * get_directions(bidirectional), output_dim)
-    def forward(self, X_batch):
-        embeddings = self.embedding_layer(X_batch)
-        output, (hidden, cell) = self.lstm(embeddings)
-        output_concat = torch.cat([output[:, :, :self.hidden_size], output[:, :, self.hidden_size:]], dim=2) # concatenates outputs
-        logits = self.linear(output_concat[:, -1, :]) # the last output of the concatenated LSTM is used for sequence classification
-        probs = F.softmax(logits, dim=1)
-        return probs
 
 classifier, loss_fn, optimizer = setup_model(device, pretrained_LSTM_model, classes, vocab, EMBEDDING_DIM, HIDDEN_DIM, 1, False, LEARNING_RATE, embeddings, False)
 time_cost = train_model(classifier, loss_fn, optimizer, train_loader, EPOCHS)
@@ -384,6 +391,8 @@ parameters.append(count_parameters(classifier))
 time_costs.append(time_cost)
 
 visualize(models, accuracies, parameters, time_costs)
+
+##########################################################################################################################################################################################
 
 accuracies = []; parameters = []; time_costs = []
 
@@ -431,15 +440,12 @@ time_costs.append(time_cost)
 
 visualize(models, accuracies, parameters, time_costs)
 
+##########################################################################################################################################################################################
+
 models = ["1Uni-RNN", "1Bi-RNN", "2Bi-RNN", "1Uni-LSTM", "1Bi-LSTM", "2Bi-LSTM"]; classes = ["Positive", "Negative"]; accuracies = []; parameters = []; time_costs = []
+
 train_dataset, test_dataset = load_dataset("IMDB Dataset.csv", ["review"], "sentiment", 80, "start"), load_dataset("IMDB Dataset.csv", ["review"], "sentiment", 20, "end")
-
-def replace_labels(dataset, categorical, numerical):
-    mapping = {categorical[0]: numerical[0], categorical[1]: numerical[1]}
-    return [(mapping[label], text) for label, text in dataset]
-
 train_dataset, test_dataset = replace_labels(train_dataset, ["negative", "positive"], [1,2]), replace_labels(test_dataset, ["negative", "positive"], [1,2])
-
 train_loader, test_loader = generate_loader(train_dataset, MAX_WORDS, BATCH_SIZE, True), generate_loader(test_dataset, MAX_WORDS, BATCH_SIZE, False)
 vocab = build_vocab([train_dataset, test_dataset], MIN_FREQ, PADDED, UNKNOWN)
 
