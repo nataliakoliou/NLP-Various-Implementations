@@ -232,6 +232,7 @@ def to_category(label, classes):
     return classes[label]
 
 ##########################################################################################################################################################################################
+
 device = set_device("cuda","cpu")
 tokenizer = get_tokenizer("basic_english")
 
