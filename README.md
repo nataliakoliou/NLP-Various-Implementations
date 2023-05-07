@@ -84,5 +84,31 @@ The following python packages are required for the code to run:
 
 **```>```** For this project, we used the AG News Classification Dataset which contains short news articles from four different categories. You can download the dataset from Kaggle using this link: https://www.kaggle.com/datasets/amananandrai/ag-news-classification-dataset.  Please note that in order to run the code, you should have these csv files: `train.csv` and `test.csv` in your local folder.
 
+---
+## Assignment.2c | Text Classification with Neural Networks
+This project provides a Python implementation of text classification algorithms using neural networks, including RNNs and LSTMs. The project involves training several models with different architectures and hyperparameters on the AG News Topic Classification and the IMDB movie review datasets to evaluate their performance on simple classification tasks. Through experimenting with different architectures and hyperparameters, the project provides valuable hands-on experience in training neural networks and insights into the factors that affect their performance in text classification tasks. The project aims to provide a deeper understanding of how these models operate and can be optimized to achieve high accuracy levels.
+
+**In this part of the project we:**
+* trained and evaluated several neural network models for text classification using the AG News Topic Classification and IMDB movie review datasets.
+* used pre-trained word embeddings and trained our own word embeddings using the Word2Vec algorithm.
+* performed hyperparameter tuning and grid search to optimize the performance of our models.
+* visualized the training and validation accuracy and loss to analyze the models' behavior during training.
+* analyzed the models' performance and identified the most difficult samples to classify.
+* compared the performance of different models and analyzed their strengths and weaknesses.
+
+## Prerequisites
+The following python packages are required for the code to run:
+* Python 3: https://www.python.org/downloads/
+* Pandas: ```pip install pandas```
+* PyTorch: ```pip install torch torchvision```
+* Tqdm: ```pip install tqdm```
+* Scikit-learn: ```pip install -U scikit-learn```
+* Torchtext: ```pip install torchtext```
+* PrettyTable: ```pip install prettytable```
+
+**Alternatively:** you can download [requirements-2c.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-2/Assignment-2c/requirements-2c.txt) and run ```pip install -r requirements-2c.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+
+**```>```** For this project, we used the AG News Classification Dataset which contains short news articles from four different categories and the IMDB movie review dataset which contains movie reviews from IMDB users, labeled either positive or negative. You can download the AG News dataset from Kaggle using this link: https://www.kaggle.com/datasets/amananandrai/ag-news-classification-dataset and the IMDB dataset from this link: https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews. We also used pre-trained GloVe embeddings, which we downloaded from the Stanford NLP group website (https://nlp.stanford.edu/projects/glove/). Please note that in order to run the code, you should have these files: `train.csv`, `test.csv`, `IMDB Dataset.csv` and `glove.6B.100d.txt` in your local folder.
+
 ## Author
 Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
