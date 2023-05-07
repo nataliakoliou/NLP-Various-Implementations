@@ -47,16 +47,6 @@ def detect_misclassification(test_data, y_pred):
             misclass_data[true_label].append((text, predicted_label))
     return misclass_data
 
-def detect_misclassification(test_data, Y_actual, Y_preds):
-    misclass_data = defaultdict(list)
-    for i in range(len(Y_actual)):
-        true_label = Y_actual[i]
-        predicted_label = Y_preds[i]
-        if true_label != predicted_label:
-            text = test_data["features"][i]
-            misclass_data[true_label].append((text, predicted_label))
-    return misclass_data
-
 def count_times(classes, common_misclass_data):
     misclass_counts = {true_label: len(misclass_tuples) for true_label, misclass_tuples in common_misclass_data.items()}
     pt = PrettyTable(field_names=[f"\033[1m{field}\033[0m" for field in ["True Label", "Misclassified Texts"]])
