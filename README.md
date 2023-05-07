@@ -48,6 +48,7 @@ The following python packages are required for the code to run:
 
 **```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/Assignment-1b/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
 
+---
 ## Assignment.2a | Word Embeddings Similarities & Analogies
 This project provides a Python implementation of word embeddings using the pre-trained word2vec and GloVe models. Word embeddings are a way of representing words in a multidimensional vector space, where similar words are closer together, and different words are further apart. Using word embeddings, we can perform various tasks such as measuring the similarity between words or finding analogies. In this project, we use the word2vec and GloVe models to find similar words and analogies. Specifically, we implement a natural language processing algorithm that uses the pre-trained models to find the most similar words to a given set of words or to solve analogies such as "man is to king as woman is to what?".
 
@@ -62,6 +63,26 @@ The following python packages are required for the code to run:
 * PrettyTable: ```pip install prettytable```
 
 **Alternatively:** you can download [requirements-2a.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-2/Assignment-2a/requirements-2a.txt) and run ```pip install -r requirements-2a.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+
+---
+## Assignment.2b | Text Classification using TF-IDF Vectorization
+This project provides a Python implementation of a text classification algorithm using TF-IDF vectorization. This algorithm extracts features from text data using n-grams and trains different classifiers to predict the labels of new texts. It makes use of the TfidfVectorizer and machine learning libraries like MultinomialNB and LinearSVC from scikit-learn to achieve this.
+
+**In this part of the project we:**
+* preprocessed the data by concatenating columns and separating labels from features, and extracted n-gram features from them using the TfidfVectorizer module.
+* trained several machine learning models (either MultinomialNB or LinearSVC) using the features and labels.
+* evaluated the models' performance on a test set by predicting the labels and calculating the accuracy score.
+* visualized the models' performance and analyzed misclassified data to identify common misclassification patterns and vulnerabilities.
+
+## Prerequisites
+The following python packages are required for the code to run:
+* Python 3: https://www.python.org/downloads/
+* Scikit-learn: ```pip install -U scikit-learn```
+* PrettyTable: ```pip install prettytable```
+
+**Alternatively:** you can download [requirements-2b.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-2/Assignment-2b/requirements-2b.txt) and run ```pip install -r requirements-2b.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+
+**```>```** For this project, we used the AG News Classification Dataset which contains short news articles from four different categories. You can download the dataset from Kaggle using this link: https://www.kaggle.com/datasets/amananandrai/ag-news-classification-dataset.  Please note that in order to run the code, you should have these csv files: `train.csv` and `test.csv` in your local folder.
 
 ## Author
 Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
