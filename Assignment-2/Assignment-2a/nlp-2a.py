@@ -23,7 +23,7 @@ def get_similar_words(n, models, data, pos, neg, analogy):
 def get_common_words(n, words, sims):
     coms = []
     pt = PrettyTable()
-    for i in range(0, n*len(words), n):  # n*len(words) = 40
+    for i in range(0, n*len(words), n):
         if 'N/A' in sims[0][i:i+n] and 'N/A' in sims[1][i:i+n]:
             coms.append([])
         else:
