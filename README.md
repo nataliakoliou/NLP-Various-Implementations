@@ -48,5 +48,20 @@ The following python packages are required for the code to run:
 
 **```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/Assignment-1b/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
 
+## Assignment.2a | Word Embeddings Similarities & Analogies
+This project provides a Python implementation of word embeddings using the pre-trained word2vec and GloVe models. Word embeddings are a way of representing words in a multidimensional vector space, where similar words are closer together, and different words are further apart. Using word embeddings, we can perform various tasks such as measuring the similarity between words or finding analogies. In this project, we use the word2vec and GloVe models to find similar words and analogies. Specifically, we implement a natural language processing algorithm that uses the pre-trained models to find the most similar words to a given set of words or to solve analogies such as "man is to king as woman is to what?".
+
+**In this part of the project we:**
+* found the most similar words to a given set of words using the pre-trained word embeddings word2vec and GloVe.
+* defined analogies by solving the equation "A is to B as C is to D" using these word2vec and GloVe models.
+
+## Prerequisites
+The following python packages are required for the code to run:
+* Python 3: https://www.python.org/downloads/
+* Gensim: ```pip install gensim```
+* PrettyTable: ```pip install prettytable```
+
+**Alternatively:** you can download [requirements-2a.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-2/Assignment-2a/requirements-2a.txt) and run ```pip install -r requirements-2a.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+
 ## Author
 Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
