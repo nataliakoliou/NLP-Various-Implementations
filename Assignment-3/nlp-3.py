@@ -157,10 +157,10 @@ def detect_misclassification(batch, idx, tokenizer, true_values_all, true_values
         display(df)
         return True
 
-#######################################################################################################################################
+# QUESTION.1/2a #############################################################################################################################################################
 
-EPOCHS = 1 # default: 3
-BATCH_SIZE = 1 # default: 8
+EPOCHS = 3
+BATCH_SIZE = 8
 LR = 1e-5
 tqdmn = tqdm.notebook.tqdm
 base_path = '/content/'
@@ -175,17 +175,17 @@ model = train_model(model, optimizer, train_loader, valid_loader, tqdmn, device,
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, test_loader, True, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap)
 
-#  2b  ################################################################################################################################
+# QUESTION.2b ###############################################################################################################################################################
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, example_loader, True, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap) #TODO: change "test" to "example" and edit def display_results!
 
-#  4  #################################################################################################################################
+# QUESTION.4 ################################################################################################################################################################
 model, tokenizer, optimizer = initialize_model("bert", tagset, device, LR, False)
 model = train_model(model, optimizer, train_loader, valid_loader, tqdmn, device, EPOCHS, tagmap, tokenizer)
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, test_loader, False, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap)
 
-#  5  #################################################################################################################################
+# QUESTION.5 ################################################################################################################################################################
 train_sentences.extend(valid_sentences)  # Concatenate the training and validation sentences
 tagmap, tagset = create_tagset(train_sentences, 'ner_tags')
 model, tokenizer, optimizer = initialize_model("bert", tagset, device, LR, True)
@@ -195,7 +195,7 @@ model = train_model(model, optimizer, train_loader, [], tqdmn, device, EPOCHS, t
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, test_loader, False, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap)
 
-#  6  #################################################################################################################################
+# QUESTION.6 ################################################################################################################################################################
 train_sentences, test_sentences, valid_sentences, example_sentences = load_data(base_path)
 tagmap, tagset = create_tagset(train_sentences, 'pos_tags')
 model, tokenizer, optimizer = initialize_model("bert", tagset, device, LR, True)
@@ -207,7 +207,7 @@ display_results("test", Y_actual, Y_preds, tagmap)
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, example_loader, True, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap) #TODO: change "test" to "example" and edit def display_results!
 
-#  7  #################################################################################################################################
+# QUESTION.7 ################################################################################################################################################################
 tagmap, tagset = create_tagset(train_sentences, 'chunk_tags')
 model, tokenizer, optimizer = initialize_model("bert", tagset, device, LR, True)
 train_dataset, valid_dataset, test_dataset, example_dataset = encode_data(tagmap, tokenizer, train_sentences, valid_sentences, test_sentences, example_sentences, 'ner_tags')
@@ -218,7 +218,7 @@ display_results("test", Y_actual, Y_preds, tagmap)
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, example_loader, True, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap) #TODO: change "test" to "example" and edit def display_results!
 
-#  8  #################################################################################################################################
+# QUESTION.8 ################################################################################################################################################################
 tagmap, tagset = create_tagset(train_sentences, 'ner_tags')
 model, tokenizer, optimizer = initialize_model("roberta", tagset, device, LR, True)
 train_dataset, valid_dataset, test_dataset, example_dataset = encode_data(tagmap, tokenizer, train_sentences, valid_sentences, test_sentences, example_sentences, 'ner_tags')
