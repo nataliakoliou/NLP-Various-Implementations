@@ -133,7 +133,7 @@ The following python packages are required for the code to run:
 
 **Alternatively:** you can download [requirements-3.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-3/requirements-3.txt) and run ```pip install -r requirements-3.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
 
-**```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/Assignment-1b/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
+**```>```** For this project, we used the For this project, we used the Conll003-Englishversion dataset for named-entity recognition (NER) using BERT. You can download the dataset from Kaggle using this link: https://www.kaggle.com/datasets/alaakhaled/conll003-englishversion. We also used a single-sentence dataset we created ourselves: [example.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-3/example.txt). Please note that in order to run the code, you should have these files: `train.txt`, `valid.txt`, `test.txt` and `example.txt` in your local folder.
 
 ## Author
 Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
