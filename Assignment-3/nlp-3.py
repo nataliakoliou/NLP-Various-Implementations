@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 import pandas as pd
 import torch.optim as optim 
 from torchtext.vocab import build_vocab_from_iterator
@@ -24,7 +23,6 @@ def load_sentences(filepath):
     return sentences
 
 def load_data(base_path):
-    print('\033[1mLoading data:\033[0m')
     train_sentences = load_sentences(base_path + 'train.txt')
     test_sentences = load_sentences(base_path + 'test.txt')
     valid_sentences = load_sentences(base_path + 'valid.txt')
@@ -61,7 +59,6 @@ def encode_sentence(tagmap, tokenizer, sentence, tagtype):
     return { 'input_ids': torch.LongTensor(encodings.input_ids), 'attention_mask': torch.LongTensor(encodings.attention_mask), 'labels': torch.LongTensor(labels) }
 
 def encode_data(tagmap, tokenizer, train_sentences, valid_sentences, test_sentences, example_sentences, tagtype):
-    print('\033[1mEncoding data:\033[0m')
     train_dataset = [encode_sentence(tagmap, tokenizer, sentence, tagtype) for sentence in train_sentences]
     valid_dataset = [encode_sentence(tagmap, tokenizer, sentence, tagtype) for sentence in valid_sentences]
     test_dataset = [encode_sentence(tagmap, tokenizer, sentence, tagtype) for sentence in test_sentences]
@@ -88,7 +85,6 @@ def setup(model_name, tagset, update):
     return model, tokenizer
 
 def initialize_model(model_name, tagset, device, lr, update):
-    print('\033[1mInitializing the model:\033[0m')
     model, tokenizer = setup(model_name, tagset, update)
     model.to(device)
     optimizer = optim.AdamW(params=model.parameters(), lr=lr)
@@ -123,7 +119,6 @@ def evaluate_model(tqdmn, device, model, data_loader, detect, tokenizer):
     return Y_actual, Y_preds
 
 def train_model(model, optimizer, train_loader, valid_loader, tqdmn, device, epochs, tagmap, tokenizer):
-    print('\033[1mTraining the model:\033[0m')
     for epoch in tqdmn(range(epochs)):
         model.train()
         print('Epoch', epoch+1)
@@ -140,13 +135,11 @@ def train_model(model, optimizer, train_loader, valid_loader, tqdmn, device, epo
     return model
 
 def display_results(data_type, Y_actual, Y_preds, tagmap):
-    if data_type == "valid":
-        print("\nValidation Accuracy: {:.3f}".format(accuracy_score(Y_actual, Y_preds)))
-        print("\nValidation Macro-Accuracy: {:.3f}".format(balanced_accuracy_score(Y_actual, Y_preds)))
-    elif data_type == "test":
-        print("\nTest Accuracy : {:.3f}".format(accuracy_score(Y_actual, Y_preds)))
-        print("\nTest Macro-Accuracy : {:.3f}".format(balanced_accuracy_score(Y_actual, Y_preds)))
-        print("\nClassification Report:\n{}".format(classification_report(Y_actual, Y_preds, labels=tagmap(tagmap.get_itos()), target_names=tagmap.get_itos(), zero_division=0)))
+    result_labels = {"test": "Test", "valid": "Validation", "example": "Example"}
+    accuracy_label = result_labels.get(data_type.lower(), "")
+    print("\033[1m{} Accuracy:\033[0m {:.3f}".format(accuracy_label, accuracy_score(Y_actual, Y_preds)))
+    print("\033[1m{} Macro-Accuracy:\033[0m {:.3f}".format(accuracy_label, balanced_accuracy_score(Y_actual, Y_preds)))
+    print("\033[1mClassification Report:\033[0m\n{}".format(classification_report(Y_actual, Y_preds, labels=tagmap(tagmap.get_itos()), target_names=tagmap.get_itos(), zero_division=0)))
 
 def detect_misclassification(batch, idx, tokenizer, true_values_all, true_values, pred_values):
     if len(true_values) >= 10 and not torch.equal(true_values, pred_values):
@@ -177,16 +170,18 @@ display_results("test", Y_actual, Y_preds, tagmap)
 
 # QUESTION.2b ###############################################################################################################################################################
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, example_loader, True, tokenizer)
-display_results("test", Y_actual, Y_preds, tagmap) #TODO: change "test" to "example" and edit def display_results!
+display_results("example", Y_actual, Y_preds, tagmap)
 
 # QUESTION.4 ################################################################################################################################################################
 model, tokenizer, optimizer = initialize_model("bert", tagset, device, LR, False)
+train_dataset, valid_dataset, test_dataset, example_dataset = encode_data(tagmap, tokenizer, train_sentences, valid_sentences, test_sentences, example_sentences, 'ner_tags')
+train_loader, valid_loader, test_loader, example_loader = create_loaders(train_dataset, valid_dataset, test_dataset, example_dataset, BATCH_SIZE)
 model = train_model(model, optimizer, train_loader, valid_loader, tqdmn, device, EPOCHS, tagmap, tokenizer)
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, test_loader, False, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap)
 
 # QUESTION.5 ################################################################################################################################################################
-train_sentences.extend(valid_sentences)  # Concatenate the training and validation sentences
+train_sentences.extend(valid_sentences)  # concatenates the training and validation sentences
 tagmap, tagset = create_tagset(train_sentences, 'ner_tags')
 model, tokenizer, optimizer = initialize_model("bert", tagset, device, LR, True)
 train_dataset, _, test_dataset, _ = encode_data(tagmap, tokenizer, train_sentences, [], test_sentences, [], 'ner_tags')
@@ -205,7 +200,7 @@ model = train_model(model, optimizer, train_loader, valid_loader, tqdmn, device,
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, test_loader, True, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap)
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, example_loader, True, tokenizer)
-display_results("test", Y_actual, Y_preds, tagmap) #TODO: change "test" to "example" and edit def display_results!
+display_results("example", Y_actual, Y_preds, tagmap)
 
 # QUESTION.7 ################################################################################################################################################################
 tagmap, tagset = create_tagset(train_sentences, 'chunk_tags')
@@ -216,13 +211,13 @@ model = train_model(model, optimizer, train_loader, valid_loader, tqdmn, device,
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, test_loader, True, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap)
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, example_loader, True, tokenizer)
-display_results("test", Y_actual, Y_preds, tagmap) #TODO: change "test" to "example" and edit def display_results!
+display_results("example", Y_actual, Y_preds, tagmap)
 
 # QUESTION.8 ################################################################################################################################################################
 tagmap, tagset = create_tagset(train_sentences, 'ner_tags')
 model, tokenizer, optimizer = initialize_model("roberta", tagset, device, LR, True)
 train_dataset, valid_dataset, test_dataset, example_dataset = encode_data(tagmap, tokenizer, train_sentences, valid_sentences, test_sentences, example_sentences, 'ner_tags')
-train_loader, valid_loader, test_loader, example_loader = create_loaders(train_dataset, valid_dataset, test_dataset, example_dataset, BATCH_SIZE)
+train_loader, valid_loader, test_loader, _ = create_loaders(train_dataset, valid_dataset, test_dataset, example_dataset, BATCH_SIZE)
 model = train_model(model, optimizer, train_loader, valid_loader, tqdmn, device, EPOCHS, tagmap, tokenizer)
 Y_actual, Y_preds = evaluate_model(tqdmn, device, model, test_loader, False, tokenizer)
 display_results("test", Y_actual, Y_preds, tagmap)
