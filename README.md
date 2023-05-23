@@ -110,5 +110,30 @@ The following python packages are required for the code to run:
 
 **```>```** For this project, we used the AG News Classification Dataset which contains short news articles from four different categories and the IMDB movie review dataset which contains movie reviews from IMDB users, labeled either positive or negative. You can download the AG News dataset from Kaggle using this link: https://www.kaggle.com/datasets/amananandrai/ag-news-classification-dataset and the IMDB dataset from this link: https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews. We also used pre-trained GloVe embeddings, which we downloaded from the Stanford NLP group website (https://nlp.stanford.edu/projects/glove/). Please note that in order to run the code, you should have these files: `train.csv`, `test.csv`, `IMDB Dataset.csv` and `glove.6B.100d.txt` in your local folder.
 
+---
+## Assignment.3 | Sequence Labeling with Pre-trained Language Models
+This project provides a Python implementation of a tag-recognition algorithm, that uses pre-trained language models to assign NER, Chunk and POS tags to sentence tokens. This algorithm provides functionalities for loading sentences, creating tagsets, aligning labels, encoding data, counting model parameters, initializing models, setting up data loaders, evaluating model performance, training the model, and displaying results. It supports both BERT and RoBERTa models for token classification and allows customization of parameters such as epochs, batch size, learning rate, and device selection (CPU or GPU). The implementation includes training, validation, and testing capabilities, along with features for detecting misclassifications and generating classification reports.
+
+**In this part of the project we:**
+* developed a tag-recognition algorithm that utilizes pre-trained language models to assign NER, Chunk, and POS tags to sentence tokens.
+* supported both BERT and RoBERTa models for token classification.
+* enabled training, validation, and testing capabilities.
+* detected tag misclassifications.
+* evaluated ChatGPT's performance in NER, Chunk and POS tagging using zero-shot and few-shot prompting.
+
+## Prerequisites
+The following python packages are required for the code to run:
+* Python 3: https://www.python.org/downloads/
+* PyTorch: ```pip install torch```
+* Pandas: ```pip install pandas```
+* Torchtext: ```pip install torchtext```
+* Transformers: ```pip install transformers```
+* Scikit-learn: ```pip install scikit-learn```
+* Tqdm: ```pip install tqdm```
+
+**Alternatively:** you can download [requirements-3.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-3/requirements-3.txt) and run ```pip install -r requirements-3.txt```, to automatically install all the packages needed to reproduce my project on your own machine.
+
+**```>```** The text file used in this project consists of short news articles in English from the Wall Street Journal: [wsj_untokenized.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-1/Assignment-1b/wsj_untokenized.txt). Please note that in order to run the code, you should have this text file in your local folder.
+
 ## Author
 Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
