@@ -135,5 +135,20 @@ The following python packages are required for the code to run:
 
 **```>```** For this project, we used the For this project, we used the Conll003-Englishversion dataset for named-entity recognition (NER) using BERT. You can download the dataset from Kaggle using this link: https://www.kaggle.com/datasets/alaakhaled/conll003-englishversion. We also used a single-sentence dataset we created ourselves: [example.txt](https://github.com/nataliakoliou/NLP-Various-Implementations/blob/main/Assignment-3/example.txt). Please note that in order to run the code, you should have these files: `train.txt`, `valid.txt`, `test.txt` and `example.txt` in your local folder.
 
+---
+## Assignment.4 | Transition-based vs Graph-based Dependency Parser
+This project provides an evaluation of two dependency parser: a transition-based parser inspired by Chen & Manning and a graph-based parser inspired by Kiperwasser & Goldberg. Various modifications were made to both parsers, including changes in word embeddings, activation functions, and the introduction of pretrained language models like BERT. The performance of these parsers was measured using the Unlabeled Attachment Score (UAS) and sometimes the Labeled Attachment Score (LAS) on the test set, providing insights into the impact of different techniques and architectural choices on dependency parsing accuracy.
+
+**In this part of the project we:**
+* experimented with randomly initialized word embeddings instead of pretrained embeddings.
+* explored the use of only word features and pretrained word embeddings.
+* added an extra hidden layer with ReLU activation to the model.
+* defined and applied the cubic activation function.
+* replaced learned word embeddings with pretrained Glove-6B-100d embeddings.
+* changed the activation function in the MLPs' hidden layer from tanh to ReLU.
+* replaced the BiLSTM encoder with a pretrained BERT language model.
+
+**```>```** Please note that running this particular section of the project locally is not feasible for users. The code presented here serves as an evaluation of pre-existing implementations, which have been selectively modified to investigate specific aspects. The intention is to offer observations and insights, rather than providing executable code.
+
 ## Author
 Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
