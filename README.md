@@ -151,4 +151,4 @@ This project provides an evaluation of two dependency parser: a transition-based
 **```>```** Please note that running this particular section of the project locally is not feasible for users. The code presented here serves as an evaluation of pre-existing implementations, which have been selectively modified to investigate specific aspects. The intention is to offer observations and insights, rather than providing executable code.
 
 ## Author
-Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-k-b37b01197/).
+Natalia Koliou: find me on [LinkedIn](https://www.linkedin.com/in/natalia-koliou-b37b01197/).
