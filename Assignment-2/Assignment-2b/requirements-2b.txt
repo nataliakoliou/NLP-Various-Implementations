@@ -152,7 +152,7 @@ tomli==2.0.1
 torch==2.0.0
 torchdata==0.6.0
 torchtext==0.15.1
-tornado==6.2
+tornado==6.3.3
 tqdm==4.65.0
 traitlets==5.5.0
 transformers==4.27.0
