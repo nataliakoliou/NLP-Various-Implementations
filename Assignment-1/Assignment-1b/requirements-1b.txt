@@ -42,7 +42,7 @@ h5py==3.8.0
 huggingface-hub==0.13.2
 idna==3.4
 ipykernel==6.17.0
-ipython==8.6.0
+IPython>=8.10
 ipython-genutils==0.2.0
 ipywidgets==8.0.2
 jax==0.4.6
@@ -156,7 +156,7 @@ wasabi==1.1.1
 wcwidth==0.2.5
 webencodings==0.5.1
 websocket-client==1.4.2
-Werkzeug==2.2.3
+werkzeug>=2.3.8
 widgetsnbextension==4.0.3
 wrapt==1.14.1
 zipp==3.15.0
