@@ -31,13 +31,13 @@ executing==1.2.0
 fastjsonschema==2.16.2
 filelock==3.9.1
 flatbuffers==23.3.3
-fonttools==4.38.0
+fonttools>=4.43.0
 gast==0.4.0
 google-auth==2.16.2
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 graphviz==0.20.1
-grpcio==1.51.3
+grpcio>=1.53.0
 h5py==3.8.0
 huggingface-hub==0.13.2
 idna==3.4
@@ -87,7 +87,7 @@ pandocfilters==1.5.0
 parso==0.8.3
 pathy==0.10.1
 pickleshare==0.7.5
-Pillow==9.3.0
+pillow>=10.0.1
 ply==3.11
 preshed==3.0.8
 prettytable==3.6.0
@@ -148,7 +148,7 @@ tomli==2.0.1
 tornado==6.2
 tqdm==4.65.0
 traitlets==5.5.0
-transformers==4.27.0
+transformers>=4.36.0
 typer==0.7.0
 typing_extensions==4.5.0
 urllib3==1.26.12
